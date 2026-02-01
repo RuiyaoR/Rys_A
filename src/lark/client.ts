@@ -1,24 +1,26 @@
-import * as larkPkg from "@larksuiteoapi/node-sdk";
+import { createRequire } from "node:module";
 import { config } from "../config.js";
 
-// SDK 可能以 default 或命名形式导出 Lark，兼容两种写法
-const LarkClass =
-  (larkPkg as { default?: new (opts: unknown) => unknown }).default ??
-  (larkPkg as { Lark?: new (opts: unknown) => unknown }).Lark;
-let client: unknown = null;
+const require = createRequire(import.meta.url);
+// 使用 require 避免 ESM namespace 导入导致的类型错误；SDK 可能导出 default 或直接导出类
+const LarkModule = require("@larksuiteoapi/node-sdk");
+const Lark = (typeof LarkModule?.default === "function" ? LarkModule.default : LarkModule) as new (opts: {
+  appId: string;
+  appSecret: string;
+  disableTokenCache: boolean;
+}) => { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } };
+
+let client: { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } } | null = null;
 
 export function getLarkClient(): { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } } {
   if (!client) {
-    if (typeof LarkClass !== "function") {
-      throw new Error("@larksuiteoapi/node-sdk 未正确导出 Lark，请检查 SDK 版本");
-    }
-    client = new (LarkClass as new (opts: unknown) => unknown)({
+    client = new Lark({
       appId: config.lark.appId,
       appSecret: config.lark.appSecret,
       disableTokenCache: false,
     });
   }
-  return client as { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } };
+  return client;
 }
 
 export interface SendMessageOptions {
