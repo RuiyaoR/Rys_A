@@ -40,17 +40,19 @@ export interface Schema20Body {
   };
 }
 
-/** 飞书另一种格式：uuid + event（平铺或嵌套 message） */
+/** 飞书另一种格式：uuid + event（平铺或嵌套 message / body） */
 export interface UuidEventBody {
   uuid?: string;
   event?: {
     open_chat_id?: string;
     chat_id?: string;
     message_id?: string;
+    open_message_id?: string;
     content?: string;
     msg_type?: string;
     chat_type?: string;
     message?: { content?: string };
+    body?: { content?: string };
     [key: string]: unknown;
   };
 }
@@ -101,15 +103,27 @@ export function handleWebhookBody(rawBody: string): { type: "challenge"; challen
     return { type: "event", event: { chatId, messageId, content, userId } };
   }
 
-  // ---------- 格式：{ uuid, event: { open_chat_id, message_id, content 或 message.content, ... } }
+  // ---------- 格式：{ uuid, event: { open_chat_id, open_message_id/message_id, content / message.content / body.content, ... } }
   if ((body as UuidEventBody).uuid != null && (body as UuidEventBody).event) {
     const ev = (body as UuidEventBody).event!;
-    const chatId = ev.open_chat_id ?? ev.chat_id ?? "";
-    const messageId = ev.message_id ?? "";
-    const rawContent = ev.content ?? ev.message?.content;
-    const content = typeof rawContent === "string" ? parseMessageContent(rawContent) : "";
-    if (!chatId || !content) return null;
-    const uid = (ev as { employee_id?: string; open_id?: string }).employee_id ?? (ev as { open_id?: string }).open_id ?? "";
+    const chatId = (ev.open_chat_id ?? ev.chat_id ?? "") as string;
+    const messageId = (ev.open_message_id ?? ev.message_id ?? "") as string;
+    const rawContent =
+      (ev.content ?? ev.message?.content ?? (ev.body as { content?: string } | undefined)?.content) as
+      | string
+      | undefined;
+    const content =
+      typeof rawContent === "string"
+        ? parseMessageContent(rawContent)
+        : typeof rawContent === "object" && rawContent !== null && "text" in rawContent
+          ? String((rawContent as { text?: string }).text ?? "").trim()
+          : "";
+    if (!chatId) return null;
+    if (!content) {
+      console.warn("[Webhook] uuid+event 格式缺少 content，event 键:", Object.keys(ev));
+      return null;
+    }
+    const uid = (ev.employee_id ?? ev.open_id ?? "") as string;
     return { type: "event", event: { chatId, messageId, content, userId: uid } };
   }
 

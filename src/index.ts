@@ -8,12 +8,13 @@ import { startScheduler } from "./cron/scheduler.js";
 assertRequiredEnv();
 
 const app = express();
-app.use(express.json());
+// 飞书 webhook 必须先拿到原始 body，再解析；若先走 express.json() 会消费掉 body，导致 rawBody 为空
 app.post("/webhook/lark", rawBodyMiddleware, async (req: Request, res: Response) => {
   const rawBody = (req as Request & { rawBody?: string }).rawBody ?? "";
   const parsed = handleWebhookBody(rawBody);
   if (!parsed) {
-    res.status(400).send("invalid");
+    console.warn("[Webhook] 解析失败或非消息事件，body 前 200 字符:", rawBody.slice(0, 200));
+    res.status(200).send("ok");
     return;
   }
   if (parsed.type === "challenge") {
@@ -49,6 +50,8 @@ app.post("/webhook/lark", rawBodyMiddleware, async (req: Request, res: Response)
     console.error("[Lark] 回复发送失败:", sendErr);
   }
 });
+
+app.use(express.json());
 
 startScheduler();
 
