@@ -61,11 +61,17 @@ export function handleWebhookBody(rawBody: string): { type: "challenge"; challen
   const eventType = ev.type ?? "";
   if (!eventType.includes("im.message.receive") || !ev.message) return null;
 
-  const chatId = ev.message.chat_id ?? "";
-  const messageId = ev.message.message_id ?? "";
-  const content = ev.message.content ? parseMessageContent(ev.message.content) : "";
+  // 只处理用户发的消息，不处理机器人自己发的（避免循环）
+  const senderType = (ev as { sender?: { sender_type?: string } }).sender?.sender_type ?? "";
+  if (senderType === "app") return null;
+
+  // 飞书可能用 chat_id 或 open_chat_id
+  const msg = ev.message as { chat_id?: string; open_chat_id?: string; message_id?: string; content?: string };
+  const chatId = msg.chat_id ?? msg.open_chat_id ?? "";
+  const messageId = msg.message_id ?? "";
+  const content = msg.content ? parseMessageContent(msg.content) : "";
   const senderId = ev.sender?.sender_id ?? (ev as { message?: { sender_id?: { user_id?: string } } }).message?.sender_id;
-  const userId = (typeof senderId?.user_id === "string" ? senderId.user_id : "") || "";
+  const userId = (typeof senderId?.user_id === "string" ? senderId.user_id : "") || (typeof (senderId as { open_id?: string })?.open_id === "string" ? (senderId as { open_id: string }).open_id : "");
 
   if (!chatId || !content) return null;
   return { type: "event", event: { chatId, messageId, content, userId } };
