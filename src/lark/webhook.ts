@@ -40,15 +40,17 @@ export interface Schema20Body {
   };
 }
 
-/** 飞书另一种格式：uuid + event（平铺 open_chat_id 等） */
+/** 飞书另一种格式：uuid + event（平铺或嵌套 message） */
 export interface UuidEventBody {
   uuid?: string;
   event?: {
     open_chat_id?: string;
+    chat_id?: string;
     message_id?: string;
     content?: string;
     msg_type?: string;
     chat_type?: string;
+    message?: { content?: string };
     [key: string]: unknown;
   };
 }
@@ -99,15 +101,16 @@ export function handleWebhookBody(rawBody: string): { type: "challenge"; challen
     return { type: "event", event: { chatId, messageId, content, userId } };
   }
 
-  // ---------- 格式：{ uuid, event: { open_chat_id, message_id, content, ... } }
+  // ---------- 格式：{ uuid, event: { open_chat_id, message_id, content 或 message.content, ... } }
   if ((body as UuidEventBody).uuid != null && (body as UuidEventBody).event) {
     const ev = (body as UuidEventBody).event!;
-    const chatId = ev.open_chat_id ?? (ev as { chat_id?: string }).chat_id ?? "";
+    const chatId = ev.open_chat_id ?? ev.chat_id ?? "";
     const messageId = ev.message_id ?? "";
-    const rawContent = ev.content;
+    const rawContent = ev.content ?? ev.message?.content;
     const content = typeof rawContent === "string" ? parseMessageContent(rawContent) : "";
     if (!chatId || !content) return null;
-    return { type: "event", event: { chatId, messageId, content, userId: "" } };
+    const uid = (ev as { employee_id?: string; open_id?: string }).employee_id ?? (ev as { open_id?: string }).open_id ?? "";
+    return { type: "event", event: { chatId, messageId, content, userId: uid } };
   }
 
   // ---------- 旧版 event_callback：{ type: "event_callback", event: { type: "im.message.receive_v1", message, sender } }
