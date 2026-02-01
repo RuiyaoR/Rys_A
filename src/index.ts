@@ -7,8 +7,23 @@ import { runAgent } from "./agent/runner.js";
 assertRequiredEnv();
 
 const app = express();
-// 飞书 webhook 必须先拿到原始 body，再解析；若先走 express.json() 会消费掉 body，导致 rawBody 为空
-app.post("/webhook/lark", rawBodyMiddleware, async (req: Request, res: Response) => {
+
+// 任何请求都打日志，确认飞书是否真的打到本服务、以及打的路径是什么
+app.use((req: Request, _res: Response, next: () => void) => {
+  console.log("[Request] %s %s", req.method, req.url);
+  next();
+});
+
+// 健康检查
+app.get("/", (_req: Request, res: Response) => {
+  res.send("Rys Assistant 运行中。飞书事件订阅请填: https://你的域名/lark/webhook");
+});
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).send("ok");
+});
+
+// 飞书 webhook 处理（必须先拿到原始 body；与 README 一致用 /lark/webhook）
+async function handleLarkWebhook(req: Request, res: Response): Promise<void> {
   const rawBody = (req as Request & { rawBody?: string }).rawBody ?? "";
   if (!rawBody || rawBody.length === 0) {
     console.warn("[Webhook] body 为空，请确认 webhook 路由在 express.json() 之前注册");
@@ -64,10 +79,15 @@ app.post("/webhook/lark", rawBodyMiddleware, async (req: Request, res: Response)
   } catch (sendErr) {
     console.error("[Lark] 回复发送失败:", sendErr);
   }
-});
+}
+
+// 飞书回调：README 与之前配置用 /lark/webhook，同时保留 /webhook/lark
+app.post("/lark/webhook", rawBodyMiddleware, handleLarkWebhook);
+app.post("/webhook/lark", rawBodyMiddleware, handleLarkWebhook);
 
 app.use(express.json());
 
 app.listen(config.port, () => {
-  console.log(`[Rys] 服务已启动，端口 ${config.port}，飞书 Webhook: POST /webhook/lark`);
+  console.log("[Rys] 服务已启动，端口 %s", config.port);
+  console.log("[Rys] 飞书回调: http://0.0.0.0:%s/lark/webhook", config.port);
 });
