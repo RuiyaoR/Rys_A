@@ -43,6 +43,7 @@ export const config = {
   },
   workspaceDir: get("WORKSPACE_DIR") || "./workspace",
   memoryDir: get("MEMORY_DIR") || "./data/memory",
+  cronDir: get("CRON_DIR") || "./data/cron",
 } as const;
 
 export function assertRequiredEnv(): void {

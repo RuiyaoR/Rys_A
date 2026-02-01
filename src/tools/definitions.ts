@@ -158,4 +158,43 @@ export const toolDefinitions: ToolDefinition[] = [
       required: ["text"],
     },
   },
+  // --- 提醒（底层 cron）---
+  {
+    name: "reminder_add",
+    description:
+      "创建定时提醒。用户说「每天 9 点提醒我喝水」时，应创建周期提醒；说「明天 10 点提醒我开会」时，创建单次提醒。到期后会在当前会话发消息。",
+    parameters: {
+      type: "object",
+      properties: {
+        message: { type: "string", description: "提醒内容，会原样发给用户" },
+        cron: {
+          type: "string",
+          description:
+            "Cron 表达式，周期提醒用。例如：0 9 * * * = 每天 9:00，0 8 * * 1-5 = 工作日 8:00，0 12 * * * = 每天 12:00。五段：分 时 日 月 周。",
+        },
+        at: {
+          type: "string",
+          description:
+            "单次提醒时间，ISO 8601 字符串，如 2025-02-02T10:00:00.000Z。与 cron 二选一。",
+        },
+      },
+      required: ["message"],
+    },
+  },
+  {
+    name: "reminder_list",
+    description: "列出当前用户已创建的所有提醒（含 id、时间规则、内容）。",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "reminder_remove",
+    description: "根据 id 删除一个提醒。id 从 reminder_list 获得。",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "提醒的 id" },
+      },
+      required: ["id"],
+    },
+  },
 ];
