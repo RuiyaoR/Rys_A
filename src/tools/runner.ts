@@ -3,7 +3,7 @@ import { runShell } from "./shell.js";
 import { readFileContent, writeFileContent, listDir } from "./filesystem.js";
 import { browse } from "./browser.js";
 import { memoryGet, memorySet } from "../memory/store.js";
-import { emailList, emailSend } from "./email.js";
+import { emailList, emailRead, emailSend } from "./email.js";
 import { travelSearch, travelCheckin } from "./travel.js";
 import { researchSearch, researchSummarize } from "./research.js";
 import { cronAdd, cronList, cronRemove } from "../cron/store.js";
@@ -56,6 +56,10 @@ export const runTool: ToolRunner = async (name, args, context) => {
       case "email_list": {
         const limit = args.limit != null ? parseInt(String(args.limit), 10) : 10;
         return emailList(isNaN(limit) ? 10 : limit);
+      }
+      case "email_read": {
+        const index = args.index != null ? parseInt(String(args.index), 10) : 0;
+        return emailRead(isNaN(index) ? 0 : index);
       }
       case "email_send": {
         const to = String(args.to ?? "");

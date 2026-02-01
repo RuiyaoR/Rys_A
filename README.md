@@ -10,7 +10,7 @@
 | | 文件系统 | 读/写/列出目录（工作区内） |
 | | Shell | 在白名单路径下执行命令 |
 | | 持久化记忆 | 按用户存储偏好与上下文 |
-| **应用** | 邮件 | 列出收件箱、发送邮件（需配置 IMAP/SMTP） |
+| **应用** | 邮件 | 收件箱列表、按序号读单封、发件（支持 Gmail：GMAIL_USER + 应用专用密码） |
 | | 旅行 | 搜索航班酒店、打开值机相关页面 |
 | | 研究 | 网页搜索、文本摘要 |
 | | **提醒** | 定时提醒（底层 cron）：每天几点、单次到时，到期在会话内发消息 |
@@ -46,7 +46,7 @@ cp .env.example .env
 可选：
 
 - `DASHSCOPE_MODEL` — 百炼模型，如 `qwen-plus`、`qwen-turbo`、`qwen-max`（默认 `qwen-plus`）
-- 邮件：`EMAIL_IMAP_*`、`EMAIL_SMTP_*`
+- **邮件（Gmail 推荐）**：`GMAIL_USER` + `GMAIL_APP_PASSWORD` 即可用 Google 邮箱收/发；或通用：`EMAIL_IMAP_HOST/USER/PASS`、`EMAIL_SMTP_HOST/USER/PASS`
 - 搜索 API：`SEARCH_API_KEY`、`SEARCH_API_URL`
 - `BROWSER_ENABLED=true` — 开启浏览器自动化（默认 true）
 - `SHELL_ALLOWED_PATHS` — Shell 白名单路径，逗号分隔

@@ -30,6 +30,11 @@ export const config = {
       user: get("EMAIL_SMTP_USER"),
       pass: get("EMAIL_SMTP_PASS"),
     },
+    /** Gmail 快捷：设置 GMAIL_USER + GMAIL_APP_PASSWORD 即用 imap.gmail.com / smtp.gmail.com */
+    gmail: {
+      user: get("GMAIL_USER"),
+      appPassword: get("GMAIL_APP_PASSWORD"),
+    },
   },
   search: {
     apiKey: get("SEARCH_API_KEY"),

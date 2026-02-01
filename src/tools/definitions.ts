@@ -86,10 +86,11 @@ export const toolDefinitions: ToolDefinition[] = [
       required: ["key", "value"],
     },
   },
-  // --- 应用：邮件 ---
+  // --- 应用：邮件（支持 Gmail：GMAIL_USER + GMAIL_APP_PASSWORD）---
   {
     name: "email_list",
-    description: "列出收件箱中的邮件（最近 N 封）。需配置 IMAP。用于读取和总结收件箱。",
+    description:
+      "列出收件箱中的邮件（最近 N 封，最新在前）。支持 Gmail 及其他 IMAP 邮箱。用于查看收件箱、让用户选一封再读。",
     parameters: {
       type: "object",
       properties: {
@@ -98,14 +99,27 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
   {
+    name: "email_read",
+    description:
+      "按序号读取单封邮件的完整内容（主题、发件人、日期、正文）。序号 1 表示最新一封，与 email_list 列表顺序一致。先 email_list 再 email_read(index)。",
+    parameters: {
+      type: "object",
+      properties: {
+        index: { type: "string", description: "序号，1=最新一封" },
+      },
+      required: ["index"],
+    },
+  },
+  {
     name: "email_send",
-    description: "发送邮件。需配置 SMTP。用于起草和发送回复。",
+    description:
+      "发送邮件。支持 Gmail 及其他 SMTP 邮箱。用于起草和发送回复。",
     parameters: {
       type: "object",
       properties: {
         to: { type: "string", description: "收件人邮箱" },
         subject: { type: "string", description: "主题" },
-        body: { type: "string", description: "正文（纯文本或 HTML）" },
+        body: { type: "string", description: "正文（纯文本）" },
       },
       required: ["to", "subject", "body"],
     },
