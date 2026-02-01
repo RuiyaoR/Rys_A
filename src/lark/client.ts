@@ -1,39 +1,42 @@
+import { createRequire } from "node:module";
 import { config } from "../config.js";
+
+const require = createRequire(import.meta.url);
 
 type LarkClient = {
   im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } };
 };
 
 let client: LarkClient | null = null;
-let initPromise: Promise<LarkClient> | null = null;
 
-async function initLarkClient(): Promise<LarkClient> {
-  if (client) return client;
-  if (initPromise) return initPromise;
-  initPromise = (async () => {
-    const lark = await import("@larksuiteoapi/node-sdk");
-    const LarkClass = (lark as { default?: unknown; Lark?: unknown }).default ?? (lark as { Lark?: unknown }).Lark;
-    if (typeof LarkClass !== "function") {
-      throw new Error(
-        "@larksuiteoapi/node-sdk 未正确导出 Lark。请确认已安装: npm install @larksuiteoapi/node-sdk"
-      );
-    }
-    client = new (LarkClass as new (opts: {
-      appId: string;
-      appSecret: string;
-      disableTokenCache: boolean;
-    }) => LarkClient)({
-      appId: config.lark.appId,
-      appSecret: config.lark.appSecret,
-      disableTokenCache: false,
-    });
-    return client;
-  })();
-  return initPromise;
+function getLarkClass(): new (opts: { appId: string; appSecret: string; disableTokenCache: boolean }) => LarkClient {
+  // SDK 可能导出 Client（具名）或 Lark，用 require 加载后按优先级取
+  const mod = require("@larksuiteoapi/node-sdk");
+  const candidates = [
+    mod?.Client,  // 新版 SDK 常用具名导出 Client
+    mod?.Lark,
+    mod?.default,
+    typeof mod === "function" ? mod : null,
+  ].filter((x): x is Function => typeof x === "function");
+  const LarkClass = candidates[0];
+  if (!LarkClass) {
+    const keys = typeof mod === "object" && mod !== null ? Object.keys(mod).join(", ") : "非对象";
+    throw new Error(
+      `@larksuiteoapi/node-sdk 未找到 Client/Lark 类。导出的键: ${keys}。请确认已安装: npm install @larksuiteoapi/node-sdk`
+    );
+  }
+  return LarkClass as new (opts: { appId: string; appSecret: string; disableTokenCache: boolean }) => LarkClient;
 }
 
 export async function getLarkClient(): Promise<LarkClient> {
-  return initLarkClient();
+  if (client) return client;
+  const LarkClass = getLarkClass();
+  client = new LarkClass({
+    appId: config.lark.appId,
+    appSecret: config.lark.appSecret,
+    disableTokenCache: false,
+  });
+  return client;
 }
 
 export interface SendMessageOptions {
