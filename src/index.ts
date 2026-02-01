@@ -88,6 +88,5 @@ app.post("/webhook/lark", rawBodyMiddleware, handleLarkWebhook);
 app.use(express.json());
 
 app.listen(config.port, () => {
-  console.log("[Rys] 服务已启动，端口 %s", config.port);
-  console.log("[Rys] 飞书回调: http://0.0.0.0:%s/lark/webhook", config.port);
+  console.log("Rys Assistant 已启动，飞书回调: http://0.0.0.0:%s/lark/webhook", config.port);
 });

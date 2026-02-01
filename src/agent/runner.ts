@@ -2,9 +2,10 @@ import type OpenAI from "openai";
 import { chatWithTools } from "../llm/openai.js";
 import { toolDefinitions } from "../tools/definitions.js";
 import { runTool } from "../tools/runner.js";
+import { memoryGet } from "../memory/store.js";
 import type { AgentMessage } from "./types.js";
 
-const SYSTEM_PROMPT = `你是一个个人助理（简化版 ClawdBot），具备以下能力：
+const SYSTEM_PROMPT_BASE = `你是一个个人助理，具备以下能力：
 
 **系统能力**：执行 Shell 命令、读写文件、列出目录、使用浏览器（打开网页/填表/点击/提取内容）、读写持久化记忆。
 **应用能力**：邮件（列出收件箱 email_list、按序号读单封 email_read、发送 email_send；支持 Gmail）、旅行（搜索航班酒店、值机）、研究（网页搜索、文本摘要）。
@@ -24,8 +25,15 @@ export async function runAgent(options: RunOptions): Promise<string> {
   const { userId, chatId, userMessage } = options;
   const context = { userId, chatId };
 
+  // 每次对话开始时加载该用户已存记忆，让模型能“记住”之前说过的话（如名字、偏好）
+  const stored = await memoryGet(userId);
+  const systemContent =
+    stored && stored !== "（暂无记忆）"
+      ? `${SYSTEM_PROMPT_BASE}\n\n**当前用户记忆（请据此回答，例如名字、偏好）**：\n${stored}`
+      : SYSTEM_PROMPT_BASE;
+
   const messages: AgentMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: systemContent },
     { role: "user", content: userMessage },
   ];
 
