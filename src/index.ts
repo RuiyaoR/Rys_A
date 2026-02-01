@@ -52,11 +52,16 @@ async function main() {
       console.log("[Webhook] 已回复 chatId=%s", chatId);
     } catch (e) {
       console.error("[Webhook] Agent 或发消息失败:", e);
+      const err = e as { status?: number; code?: string; message?: string };
+      const is401 = err.status === 401 || err.code === "invalid_api_key";
+      const userMsg = is401
+        ? "大模型 API Key 无效。请在服务器 .env 中设置正确的 DASHSCOPE_API_KEY（以 sk- 开头），从 https://bailian.console.aliyun.com 获取。"
+        : `处理出错: ${err.message ?? (e as Error).message}`;
       try {
         await sendMessage({
           receiveId: chatId,
           receiveIdType: "chat_id",
-          content: `处理出错: ${(e as Error).message}`,
+          content: userMsg,
         });
       } catch (sendErr) {
         console.error("[Webhook] 发送错误提示失败:", sendErr);

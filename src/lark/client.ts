@@ -1,28 +1,39 @@
-import { createRequire } from "node:module";
 import { config } from "../config.js";
 
-const require = createRequire(import.meta.url);
-const LarkModule = require("@larksuiteoapi/node-sdk");
-// SDK 可能导出为 .Lark、.default 或 module.exports 直接为类
-const LarkClass =
-  (typeof LarkModule?.Lark === "function" ? LarkModule.Lark : null) ??
-  (typeof LarkModule?.default === "function" ? LarkModule.default : null) ??
-  (typeof LarkModule === "function" ? LarkModule : null);
+type LarkClient = {
+  im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } };
+};
 
-let client: { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } } | null = null;
+let client: LarkClient | null = null;
+let initPromise: Promise<LarkClient> | null = null;
 
-export function getLarkClient(): { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } } {
-  if (!client) {
+async function initLarkClient(): Promise<LarkClient> {
+  if (client) return client;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    const lark = await import("@larksuiteoapi/node-sdk");
+    const LarkClass = (lark as { default?: unknown; Lark?: unknown }).default ?? (lark as { Lark?: unknown }).Lark;
     if (typeof LarkClass !== "function") {
-      throw new Error("@larksuiteoapi/node-sdk 未正确导出 Lark 类，请检查 SDK 版本");
+      throw new Error(
+        "@larksuiteoapi/node-sdk 未正确导出 Lark。请确认已安装: npm install @larksuiteoapi/node-sdk"
+      );
     }
-    client = new (LarkClass as new (opts: { appId: string; appSecret: string; disableTokenCache: boolean }) => unknown)({
+    client = new (LarkClass as new (opts: {
+      appId: string;
+      appSecret: string;
+      disableTokenCache: boolean;
+    }) => LarkClient)({
       appId: config.lark.appId,
       appSecret: config.lark.appSecret,
       disableTokenCache: false,
-    }) as { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } };
-  }
-  return client;
+    });
+    return client;
+  })();
+  return initPromise;
+}
+
+export async function getLarkClient(): Promise<LarkClient> {
+  return initLarkClient();
 }
 
 export interface SendMessageOptions {
@@ -32,12 +43,8 @@ export interface SendMessageOptions {
   msgType?: "text" | "post";
 }
 
-/**
- * 发送文本消息到飞书会话
- * receiveId 一般为 chat_id（群/单聊），receiveIdType 为 "chat_id"
- */
 export async function sendMessage(opts: SendMessageOptions): Promise<string | null> {
-  const larkClient = getLarkClient();
+  const larkClient = await getLarkClient();
   const body = {
     receive_id: opts.receiveId,
     msg_type: "text" as const,
@@ -54,10 +61,6 @@ export async function sendMessage(opts: SendMessageOptions): Promise<string | nu
   return resp.data.message_id;
 }
 
-/**
- * 解析飞书「接收消息」事件中的文本内容
- * event.message.content 为 JSON 字符串，如 {"text":"用户输入"}
- */
 export function parseMessageContent(content: string): string {
   try {
     const obj = JSON.parse(content) as { text?: string };

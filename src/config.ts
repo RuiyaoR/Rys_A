@@ -52,4 +52,9 @@ export function assertRequiredEnv(): void {
   if (!config.llm.apiKey) {
     throw new Error("请设置 DASHSCOPE_API_KEY 或 OPENAI_API_KEY");
   }
+  if (config.llm.baseURL?.includes("dashscope") && !/^sk-[a-zA-Z0-9-]+$/.test(config.llm.apiKey)) {
+    console.warn(
+      "[配置] 百炼 API Key 通常以 sk- 开头，请从 https://bailian.console.aliyun.com 获取并填入 .env 的 DASHSCOPE_API_KEY"
+    );
+  }
 }
