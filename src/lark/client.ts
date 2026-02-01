@@ -1,17 +1,24 @@
-import * as lark from "@larksuiteoapi/node-sdk";
+import * as larkPkg from "@larksuiteoapi/node-sdk";
 import { config } from "../config.js";
 
-let client: lark.Lark | null = null;
+// SDK 可能以 default 或命名形式导出 Lark，兼容两种写法
+const LarkClass =
+  (larkPkg as { default?: new (opts: unknown) => unknown }).default ??
+  (larkPkg as { Lark?: new (opts: unknown) => unknown }).Lark;
+let client: unknown = null;
 
-export function getLarkClient(): lark.Lark {
+export function getLarkClient(): { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } } {
   if (!client) {
-    client = new lark.Lark({
+    if (typeof LarkClass !== "function") {
+      throw new Error("@larksuiteoapi/node-sdk 未正确导出 Lark，请检查 SDK 版本");
+    }
+    client = new (LarkClass as new (opts: unknown) => unknown)({
       appId: config.lark.appId,
       appSecret: config.lark.appSecret,
       disableTokenCache: false,
     });
   }
-  return client;
+  return client as { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } };
 }
 
 export interface SendMessageOptions {
@@ -27,9 +34,9 @@ export interface SendMessageOptions {
  */
 export async function sendMessage(opts: SendMessageOptions): Promise<string | null> {
   const larkClient = getLarkClient();
-  const body: lark.im.v1.CreateMessageRequest = {
+  const body = {
     receive_id: opts.receiveId,
-    msg_type: "text",
+    msg_type: "text" as const,
     content: JSON.stringify({ text: opts.content }),
   };
   const resp = await larkClient.im.v1.message.create({

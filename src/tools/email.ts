@@ -22,15 +22,22 @@ export async function emailList(limit = 10): Promise<string> {
     const lock = await client.getMailboxLock("INBOX");
     const messages: string[] = [];
     try {
-      const exists = client.mailbox.exists;
-      const start = Math.max(1, exists - limit + 1);
-      const range = `${start}:${exists}`;
-      for await (const msg of client.fetch(range, { envelope: true })) {
-        const env = msg.envelope;
-        const subject = (env?.subject ?? "(无主题)").toString();
-        const from = env?.from?.[0]?.address ?? "?";
-        const date = env?.date instanceof Date ? env.date.toISOString() : "?";
-        messages.push(`${date} | ${from} | ${subject}`);
+      const mailbox = client.mailbox;
+      const exists = mailbox && typeof (mailbox as { exists?: number }).exists === "number"
+        ? (mailbox as { exists: number }).exists
+        : 0;
+      if (exists === 0) {
+        // 收件箱为空，不 fetch
+      } else {
+        const start = Math.max(1, exists - limit + 1);
+        const range = `${start}:${exists}`;
+        for await (const msg of client.fetch(range, { envelope: true })) {
+          const env = msg.envelope;
+          const subject = (env?.subject ?? "(无主题)").toString();
+          const from = env?.from?.[0]?.address ?? "?";
+          const date = env?.date instanceof Date ? env.date.toISOString() : "?";
+          messages.push(`${date} | ${from} | ${subject}`);
+        }
       }
     } finally {
       lock.release();
