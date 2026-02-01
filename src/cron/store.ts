@@ -1,8 +1,11 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "node:crypto";
-import { parseExpression } from "cron-parser";
+import { createRequire } from "node:module";
 import { config } from "../config.js";
+
+const require = createRequire(import.meta.url);
+const { parseExpression } = require("cron-parser");
 
 export interface CronJob {
   id: string;
