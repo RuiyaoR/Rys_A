@@ -123,7 +123,8 @@ export function handleWebhookBody(rawBody: string): { type: "challenge"; challen
   const messageId = msg.message_id ?? "";
   const content = msg.content ? parseMessageContent(msg.content) : "";
   const senderId = ev.sender?.sender_id ?? (ev as { message?: { sender_id?: { user_id?: string } } }).message?.sender_id;
-  const userId = (typeof senderId?.user_id === "string" ? senderId.user_id : "") || (typeof (senderId as { open_id?: string })?.open_id === "string" ? (senderId as { open_id: string }).open_id : "";
+  const sid = senderId as { user_id?: string; open_id?: string } | null | undefined;
+  const userId = (typeof sid?.user_id === "string" ? sid.user_id : "") || (typeof sid?.open_id === "string" ? sid.open_id : "");
   if (!chatId || !content) return null;
   return { type: "event", event: { chatId, messageId, content, userId } };
 }
