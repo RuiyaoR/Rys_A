@@ -37,7 +37,11 @@ export const runTool: ToolRunner = async (name, args, context) => {
         const url = args.url != null ? String(args.url) : undefined;
         const selector = args.selector != null ? String(args.selector) : undefined;
         const value = args.value != null ? String(args.value) : undefined;
-        return browse({ action, url, selector, value });
+        const validActions = ["navigate", "extract", "click", "fill"] as const;
+        if (!validActions.includes(action as (typeof validActions)[number])) {
+          return `无效的 action，应为: ${validActions.join(", ")}`;
+        }
+        return browse({ action: action as (typeof validActions)[number], url, selector, value });
       }
       case "memory_get": {
         const key = args.key != null ? String(args.key) : undefined;

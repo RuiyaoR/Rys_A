@@ -29,7 +29,8 @@ export async function browse(options: BrowseOptions): Promise<string> {
         return text;
       }
       if (action === "click" && selector) {
-        await page.click(selector, { timeout: 5000 });
+        await page.waitForSelector(selector, { timeout: 5000 });
+        await page.click(selector);
         return "已点击";
       }
       if (action === "fill" && selector && value !== undefined) {
