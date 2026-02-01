@@ -10,22 +10,33 @@ const app = express();
 // 飞书 webhook 必须先拿到原始 body，再解析；若先走 express.json() 会消费掉 body，导致 rawBody 为空
 app.post("/webhook/lark", rawBodyMiddleware, async (req: Request, res: Response) => {
   const rawBody = (req as Request & { rawBody?: string }).rawBody ?? "";
+  if (!rawBody || rawBody.length === 0) {
+    console.warn("[Webhook] body 为空，请确认 webhook 路由在 express.json() 之前注册");
+    res.status(200).send("ok");
+    return;
+  }
   const parsed = handleWebhookBody(rawBody);
   if (!parsed) {
-    console.warn("[Webhook] 解析失败或非消息事件，body 前 200 字符:", rawBody.slice(0, 200));
+    console.warn("[Webhook] 解析失败或非消息事件，body 前 500 字符:", rawBody.slice(0, 500));
     res.status(200).send("ok");
     return;
   }
   if (parsed.type === "challenge") {
+    console.log("[Webhook] URL 校验，返回 challenge");
     res.json({ challenge: parsed.challenge });
     return;
   }
   res.status(200).send("ok");
   const { chatId, content, userId } = parsed.event;
-  if (!content?.trim()) return;
+  console.log("[Webhook] 收到消息 chatId=%s userId=%s content=%s", chatId, userId, content?.slice(0, 50));
+  if (!content?.trim()) {
+    console.warn("[Webhook] content 为空，跳过处理");
+    return;
+  }
   let reply: string;
   try {
     reply = await runAgent({ userId, chatId, userMessage: content });
+    console.log("[Webhook] Agent 回复长度:", reply?.length ?? 0);
   } catch (e: unknown) {
     const err = e as Error & { status?: number; code?: string };
     const msg = err.message ?? String(e);
@@ -40,11 +51,16 @@ app.post("/webhook/lark", rawBodyMiddleware, async (req: Request, res: Response)
     }
   }
   try {
-    await sendMessage({
+    const msgId = await sendMessage({
       receiveId: chatId,
       receiveIdType: "chat_id",
       content: reply,
     });
+    if (msgId) {
+      console.log("[Webhook] 已发送回复 message_id=%s", msgId);
+    } else {
+      console.error("[Lark] 回复发送失败：API 未返回 message_id");
+    }
   } catch (sendErr) {
     console.error("[Lark] 回复发送失败:", sendErr);
   }
