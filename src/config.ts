@@ -15,7 +15,7 @@ export const config = {
   llm: {
     apiKey: get("DASHSCOPE_API_KEY") || get("OPENAI_API_KEY"),
     baseURL: get("DASHSCOPE_API_KEY")
-      ? (get("DASHSCOPE_BASE_URL") || "https://dashscope.aliyuncs.com/compatible-mode/v1")
+      ? (get("DASHSCOPE_BASE_URL") || "https://dashscope-us.aliyuncs.com/compatible-mode/v1")
       : (get("OPENAI_BASE_URL") || undefined),
     model: get("DASHSCOPE_MODEL") || get("OPENAI_MODEL") || "qwen-plus",
   },
