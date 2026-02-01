@@ -9,7 +9,7 @@ import { researchSearch, researchSummarize } from "./research.js";
 import { cronAdd, cronList, cronRemove } from "../cron/store.js";
 
 export const runTool: ToolRunner = async (name, args, context) => {
-  const { userId } = context;
+  const { userId, chatId } = context;
   try {
     switch (name) {
       case "shell_exec": {

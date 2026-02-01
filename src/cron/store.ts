@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "node:crypto";
+import { parseExpression } from "cron-parser";
 import { config } from "../config.js";
 
 export interface CronJob {
@@ -99,9 +100,8 @@ export async function cronGetDue(now: Date): Promise<CronJob[]> {
     }
     if (job.cron) {
       try {
-        const { parseExpression } = await import("cron-parser");
         const interval = parseExpression(job.cron, { currentDate: prevMinute });
-        const nextRun = interval.next().getTime();
+        const nextRun = interval.next().toDate().getTime();
         if (nextRun <= startOfMinute.getTime()) due.push(job);
       } catch {
         // 无效 cron 忽略
