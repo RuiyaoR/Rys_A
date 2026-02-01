@@ -1,0 +1,33 @@
+{
+  "name": "rys-assistant",
+  "version": "0.1.0",
+  "description": "简化版 ClawdBot 个人助理：接入飞书，具备浏览器/文件/Shell/记忆 + 邮件/旅行/研究",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.44.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "openai": "^4.73.0",
+    "puppeteer": "^23.6.0",
+    "zod": "^3.23.8",
+    "imapflow": "^1.0.164",
+    "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/nodemailer": "^6.4.14",
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
