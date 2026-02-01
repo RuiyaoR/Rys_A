@@ -2,23 +2,25 @@ import { createRequire } from "node:module";
 import { config } from "../config.js";
 
 const require = createRequire(import.meta.url);
-// 使用 require 避免 ESM namespace 导入导致的类型错误；SDK 可能导出 default 或直接导出类
 const LarkModule = require("@larksuiteoapi/node-sdk");
-const Lark = (typeof LarkModule?.default === "function" ? LarkModule.default : LarkModule) as new (opts: {
-  appId: string;
-  appSecret: string;
-  disableTokenCache: boolean;
-}) => { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } };
+// SDK 可能导出为 .Lark、.default 或 module.exports 直接为类
+const LarkClass =
+  (typeof LarkModule?.Lark === "function" ? LarkModule.Lark : null) ??
+  (typeof LarkModule?.default === "function" ? LarkModule.default : null) ??
+  (typeof LarkModule === "function" ? LarkModule : null);
 
 let client: { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } } | null = null;
 
 export function getLarkClient(): { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } } {
   if (!client) {
-    client = new Lark({
+    if (typeof LarkClass !== "function") {
+      throw new Error("@larksuiteoapi/node-sdk 未正确导出 Lark 类，请检查 SDK 版本");
+    }
+    client = new (LarkClass as new (opts: { appId: string; appSecret: string; disableTokenCache: boolean }) => unknown)({
       appId: config.lark.appId,
       appSecret: config.lark.appSecret,
       disableTokenCache: false,
-    });
+    }) as { im: { v1: { message: { create: (opts: unknown) => Promise<{ data?: { message_id?: string } }> } } } };
   }
   return client;
 }
