@@ -3,7 +3,6 @@ import { config, assertRequiredEnv } from "./config.js";
 import { handleWebhookBody, rawBodyMiddleware } from "./lark/webhook.js";
 import { sendMessage } from "./lark/client.js";
 import { runAgent } from "./agent/runner.js";
-import { startScheduler } from "./cron/scheduler.js";
 
 assertRequiredEnv();
 
@@ -52,8 +51,6 @@ app.post("/webhook/lark", rawBodyMiddleware, async (req: Request, res: Response)
 });
 
 app.use(express.json());
-
-startScheduler();
 
 app.listen(config.port, () => {
   console.log(`[Rys] 服务已启动，端口 ${config.port}，飞书 Webhook: POST /webhook/lark`);

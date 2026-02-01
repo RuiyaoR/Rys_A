@@ -6,7 +6,6 @@ import { memoryGet, memorySet } from "../memory/store.js";
 import { emailList, emailRead, emailSend } from "./email.js";
 import { travelSearch, travelCheckin } from "./travel.js";
 import { researchSearch, researchSummarize } from "./research.js";
-import { cronAdd, cronList, cronRemove } from "../cron/store.js";
 
 export const runTool: ToolRunner = async (name, args, context) => {
   const { userId, chatId } = context;
@@ -85,39 +84,6 @@ export const runTool: ToolRunner = async (name, args, context) => {
         const text = String(args.text ?? "");
         const maxLength = args.max_length != null ? String(args.max_length) : "500";
         return researchSummarize(text, parseInt(maxLength, 10) || 500);
-      }
-      case "reminder_add": {
-        const message = String(args.message ?? "").trim();
-        if (!message) return "提醒内容不能为空";
-        const cron = args.cron != null ? String(args.cron).trim() : undefined;
-        const at = args.at != null ? String(args.at).trim() : undefined;
-        const job = await cronAdd({
-          userId,
-          chatId,
-          message,
-          cron: cron || undefined,
-          at: at || undefined,
-        });
-        if (job.at) {
-          return `已添加单次提醒，时间：${job.at}。到期会在此会话发送：「${job.message}」`;
-        }
-        return `已添加周期提醒（${job.cron}）。到期会在此会话发送：「${job.message}」`;
-      }
-      case "reminder_list": {
-        const jobs = await cronList(userId);
-        if (jobs.length === 0) return "当前没有任何提醒。";
-        return jobs
-          .map(
-            (j) =>
-              `- id: ${j.id}\n  规则: ${j.cron ?? j.at ?? "?"}\n  内容: ${j.message}`
-          )
-          .join("\n");
-      }
-      case "reminder_remove": {
-        const id = String(args.id ?? "").trim();
-        if (!id) return "请提供要删除的提醒 id";
-        const ok = await cronRemove(id, userId);
-        return ok ? "已删除该提醒。" : "未找到该 id 的提醒或无权删除。";
       }
       default:
         return `未知工具: ${name}`;

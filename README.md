@@ -13,7 +13,6 @@
 | **应用** | 邮件 | 收件箱列表、按序号读单封、发件（支持 Gmail：GMAIL_USER + 应用专用密码） |
 | | 旅行 | 搜索航班酒店、打开值机相关页面 |
 | | 研究 | 网页搜索、文本摘要 |
-| | **提醒** | 定时提醒（底层 cron）：每天几点、单次到时，到期在会话内发消息 |
 
 ## 环境要求
 
@@ -52,7 +51,6 @@ cp .env.example .env
 - `SHELL_ALLOWED_PATHS` — Shell 白名单路径，逗号分隔
 - `WORKSPACE_DIR` — 文件工具工作区，默认 `./workspace`
 - `MEMORY_DIR` — 记忆存储目录，默认 `./data/memory`
-- `CRON_DIR` — 提醒任务存储目录（jobs.json），默认 `./data/cron`
 - `PORT` — 服务端口，默认 3000
 
 ### 3. 飞书应用配置
